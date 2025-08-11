@@ -76,7 +76,7 @@
 
 ### Prerequisites
 
-This lib requires **Node.js >=12.22.0**, **NestJS ^10.0.0**, **ioredis ^5.0.0**.
+This lib requires **Node.js >=12.22.0**, **NestJS ^10.0.0 || ^11.0.0**, **ioredis ^5.0.0**.
 
 - If you depend on **ioredis 4**, please use [version 7](https://github.com/songkeys/nestjs-redis/tree/v7.0.0) of the lib.
 - If you depend on **ioredis 5**, **NestJS 7** or **8**, please use [version 8](https://github.com/songkeys/nestjs-redis/tree/v8.2.2) of the lib.
@@ -220,6 +220,7 @@ export class AppModule {}
 
 ## Roadmap
 
+- [x] Compatible with **NestJS ^11**
 - [x] Compatible with **NestJS ^10**
 - [ ] Flexible custom logger
 - [ ] Add some examples for **TLS**
