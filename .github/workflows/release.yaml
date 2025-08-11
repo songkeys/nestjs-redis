@@ -10,7 +10,7 @@ jobs:
           version: latest
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           check-latest: true
           architecture: x64
           registry-url: 'https://registry.npmjs.org'
