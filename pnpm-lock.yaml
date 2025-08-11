@@ -105,10 +105,10 @@ importers:
   packages/redis:
     dependencies:
       '@nestjs/common':
-        specifier: ^10.0.0
+        specifier: ^10.0.0 || ^11.0.0
         version: 10.0.5(reflect-metadata@0.1.13)(rxjs@7.8.1)
       '@nestjs/core':
-        specifier: ^10.0.0
+        specifier: ^10.0.0 || ^11.0.0
         version: 10.0.5(@nestjs/common@10.0.5)(reflect-metadata@0.1.13)(rxjs@7.8.1)
       ioredis:
         specifier: ^5.0.0
@@ -120,13 +120,13 @@ importers:
   packages/redis-health:
     dependencies:
       '@nestjs/common':
-        specifier: ^10.0.0
+        specifier: ^10.0.0 || ^11.0.0
         version: 10.0.5(reflect-metadata@0.1.13)(rxjs@7.8.1)
       '@nestjs/core':
-        specifier: ^10.0.0
+        specifier: ^10.0.0 || ^11.0.0
         version: 10.0.5(@nestjs/common@10.0.5)(reflect-metadata@0.1.13)(rxjs@7.8.1)
       '@nestjs/terminus':
-        specifier: ^10.0.0
+        specifier: ^10.0.0 || ^11.0.0
         version: 10.0.1(@nestjs/common@10.0.5)(@nestjs/core@10.0.5)(reflect-metadata@0.1.13)(rxjs@7.8.1)
       ioredis:
         specifier: ^5.0.0

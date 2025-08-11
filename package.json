@@ -1,6 +1,6 @@
 {
   "name": "@songkeys/root",
-  "version": "10",
+  "version": "11",
   "description": "Redis(ioredis) module for Nest framework (node.js).",
   "author": "Songkeys <songv587@gmail.com>",
   "private": true,
