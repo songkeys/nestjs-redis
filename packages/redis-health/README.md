@@ -149,6 +149,13 @@ export class AppController {
 
 > HINT: Both `TerminusModule` and `RedisHealthModule` are not global modules.
 
+## Compatibility
+
+Requires `@nestjs/terminus` 11 or 12. Terminus 10 is no longer supported.
+`RedisHealthIndicator.checkHealth()` returns a `down` result when a connection fails,
+times out, or exceeds the memory threshold. Pass it to `HealthCheckService.check()`
+to produce the standard HTTP 503 response for unhealthy services.
+
 ## Settings
 
 ### Redis

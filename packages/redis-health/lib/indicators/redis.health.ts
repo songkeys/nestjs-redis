@@ -1,5 +1,5 @@
 import { Injectable, Scope } from '@nestjs/common';
-import { HealthIndicator, HealthIndicatorResult, HealthCheckError } from '@nestjs/terminus';
+import { HealthIndicatorService, HealthIndicatorResult } from '@nestjs/terminus';
 import { FAILED_CLUSTER_STATE, CANNOT_BE_READ, ABNORMALLY_MEMORY_USAGE, INVALID_TYPE } from '@health/messages';
 import { promiseTimeout, removeLineBreaks, parseUsedMemory, isNullish } from '@health/utils';
 import { RedisCheckSettings } from './redis-check-settings.interface';
@@ -10,7 +10,9 @@ import { RedisCheckSettings } from './redis-check-settings.interface';
  * @public
  */
 @Injectable({ scope: Scope.TRANSIENT })
-export class RedisHealthIndicator extends HealthIndicator {
+export class RedisHealthIndicator {
+  constructor(private readonly healthIndicatorService: HealthIndicatorService) {}
+
   /**
    * Checks a redis/cluster connection.
    *
@@ -19,7 +21,7 @@ export class RedisHealthIndicator extends HealthIndicator {
    */
   async checkHealth(key: string, options: RedisCheckSettings): Promise<HealthIndicatorResult> {
     const { type, client } = options;
-    let isHealthy = false;
+    const indicator = this.healthIndicatorService.check(key);
 
     if (type !== 'redis' && type !== 'cluster') throw new Error(INVALID_TYPE);
 
@@ -38,13 +40,11 @@ export class RedisHealthIndicator extends HealthIndicator {
           if (!clusterInfo.includes('cluster_state:ok')) throw new Error(FAILED_CLUSTER_STATE);
         } else throw new Error(CANNOT_BE_READ);
       }
-
-      isHealthy = true;
     } catch (e) {
       const { message } = e as Error;
-      throw new HealthCheckError(message, this.getStatus(key, isHealthy, { message }));
+      return indicator.down({ message });
     }
 
-    return this.getStatus(key, isHealthy);
+    return indicator.up();
   }
 }
