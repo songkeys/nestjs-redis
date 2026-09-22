@@ -1,47 +1,32 @@
 name: testing
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
+permissions:
+  contents: read
 jobs:
   test:
-    name: Node ${{ matrix.node }} / ${{ matrix.dependencies }}
+    name: Node ${{ matrix.node }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - node: 20
-            dependencies: locked
-          - node: 24
-            dependencies: latest
+        node: [24, 26]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
+      - uses: pnpm/action-setup@v6
       - run: pnpm install --frozen-lockfile
+      - run: pnpm audit
       - run: docker compose up -d --wait
       - run: docker compose exec -T cluster-1_master-1 redis-cli --cluster create 127.0.0.1:16380 127.0.0.1:16381 127.0.0.1:16382 --cluster-yes
       - run: docker compose exec -T cluster-2_master-1 redis-cli --cluster create 127.0.0.1:16480 127.0.0.1:16481 127.0.0.1:16482 --cluster-yes
-      - run: pnpm --filter "@songkeys/nestjs-redis*" lint
-      - run: pnpm --filter "@songkeys/nestjs-redis*" run test --runInBand
-      - run: pnpm --filter "@songkeys/nestjs-redis*" build
-      - run: pnpm --filter "@songkeys/nestjs-redis*" run test:e2e --runInBand
-      - name: Install NestJS 12 and ioredis 6
-        if: matrix.dependencies == 'latest'
-        run: |
-          pnpm add -Dw @nestjs/common@12 @nestjs/core@12 @nestjs/testing@12 @nestjs/platform-fastify@12 @nestjs/terminus@12 ioredis@6 reflect-metadata@0.2 fastify@5
-          pnpm --filter "./packages/redis*" add -D @nestjs/common@12 @nestjs/core@12 ioredis@6
-          pnpm --filter "@songkeys/nestjs-redis-health" add -D @nestjs/terminus@12
-      - name: Validate latest dependency compatibility
-        if: matrix.dependencies == 'latest'
-        run: |
-          pnpm --filter "@songkeys/nestjs-redis*" lint
-          pnpm --filter "@songkeys/nestjs-redis*" build
-          node --test scripts/compatibility.test.cjs
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm test:e2e
+      - run: pnpm test:integration
       - if: always()
         run: docker compose down -v

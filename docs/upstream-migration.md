@@ -1,6 +1,6 @@
-# Migrating to the upstream Service API
+# Migrating to v12
 
-The upstream synchronization includes breaking API changes. The npm package names remain `@songkeys/nestjs-redis` and `@songkeys/nestjs-redis-health`.
+Version 12 includes the upstream Service API and requires Node.js >=24.11.0, NestJS 12, and ioredis 6. The npm package names remain `@songkeys/nestjs-redis` and `@songkeys/nestjs-redis-health`.
 
 | Previous API                                            | Current API                                                                   |
 | ------------------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -26,8 +26,8 @@ export class CacheService {
 
 Redis configuration also supports `provide`, `beforeCreate`, and `created` callbacks. `onClientCreated` is deprecated upstream in favor of `created`. Redis ready logging now defaults to enabled.
 
-The health package requires Terminus 11 or 12; Terminus 10 is no longer supported. `RedisHealthIndicator.checkHealth()` returns a `down` result on unhealthy connections. Use `HealthCheckService.check()` to produce the HTTP 503 response.
+The health package requires Terminus 12; older Terminus versions are no longer supported. `RedisHealthIndicator.checkHealth()` returns a `down` result on unhealthy connections. Use `HealthCheckService.check()` to produce the HTTP 503 response.
 
-Choose a Node.js version supported by your NestJS and ioredis versions. Repository development and CI require Node.js 20 or newer.
+Repository development uses pnpm 12 and Node.js >=24.11.0. CI tests Node.js 24 and 26. NestJS 10/11 and ioredis 5 are no longer supported. ioredis 6 uses RESP3 by default.
 
-The upstream `node-redis` package is an unfinished scaffold and is kept private.
+The unfinished `node-redis` scaffold and its unused peer dependency have been removed. Both published packages use ioredis.

@@ -1,6 +1,6 @@
 # Test fixtures use host networking so Redis Cluster advertises reachable ports.
 x-redis: &redis
-  image: redis:7-alpine
+  image: redis:8-alpine
   network_mode: host
   healthcheck:
     test: ['CMD-SHELL', 'redis-cli -p "$$REDIS_PORT" ping | grep -q PONG']

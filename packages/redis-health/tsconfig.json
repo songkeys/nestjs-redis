@@ -5,7 +5,8 @@
     "paths": {
       "@/*": ["../redis/lib/*"],
       "@health/*": ["./lib/*"]
-    }
+    },
+    "rootDir": ".."
   },
   "include": ["lib", "test"],
   "files": ["../global.d.ts"]
