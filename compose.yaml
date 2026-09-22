@@ -1,86 +1,57 @@
-# initialize:
-# sudo docker compose exec cluster-1_master-1 redis-cli --cluster create 127.0.0.1:16380 127.0.0.1:16381 127.0.0.1:16382 --cluster-yes
-# sudo docker compose exec cluster-2_master-1 redis-cli --cluster create 127.0.0.1:16480 127.0.0.1:16481 127.0.0.1:16482 --cluster-yes
+# Test fixtures use host networking so Redis Cluster advertises reachable ports.
+x-redis: &redis
+  image: redis:7-alpine
+  network_mode: host
+  healthcheck:
+    test: ['CMD-SHELL', 'redis-cli -p "$$REDIS_PORT" ping | grep -q PONG']
+    interval: 1s
+    timeout: 3s
+    retries: 30
 
 services:
   cluster-1_master-1:
-    image: bitnami/redis-cluster:latest
+    <<: *redis
     environment:
-      - REDIS_PORT_NUMBER=16380
-      - REDIS_PASSWORD=cluster1
-      - REDIS_NODES=cluster-1_master-1 cluster-1_master-2 cluster-1_master-3
-      - REDIS_CLUSTER_DYNAMIC_IPS=no
-      - REDIS_CLUSTER_ANNOUNCE_IP=0.0.0.0
-      - REDISCLI_AUTH=cluster1
-    network_mode: host
+      REDIS_PORT: 16380
+      REDISCLI_AUTH: cluster1
+    command: redis-server --port 16380 --bind 0.0.0.0 --protected-mode no --cluster-enabled yes --cluster-announce-ip 127.0.0.1 --requirepass cluster1 --masterauth cluster1 --save "" --appendonly no
   cluster-1_master-2:
-    image: bitnami/redis-cluster:latest
+    <<: *redis
     environment:
-      - REDIS_PORT_NUMBER=16381
-      - REDIS_PASSWORD=cluster1
-      - REDIS_NODES=cluster-1_master-1 cluster-1_master-2 cluster-1_master-3
-      - REDIS_CLUSTER_DYNAMIC_IPS=no
-      - REDIS_CLUSTER_ANNOUNCE_IP=0.0.0.0
-    network_mode: host
+      REDIS_PORT: 16381
+      REDISCLI_AUTH: cluster1
+    command: redis-server --port 16381 --bind 0.0.0.0 --protected-mode no --cluster-enabled yes --cluster-announce-ip 127.0.0.1 --requirepass cluster1 --masterauth cluster1 --save "" --appendonly no
   cluster-1_master-3:
-    image: bitnami/redis-cluster:latest
+    <<: *redis
     environment:
-      - REDIS_PORT_NUMBER=16382
-      - REDIS_PASSWORD=cluster1
-      - REDIS_NODES=cluster-1_master-1 cluster-1_master-2 cluster-1_master-3
-      - REDIS_CLUSTER_DYNAMIC_IPS=no
-      - REDIS_CLUSTER_ANNOUNCE_IP=0.0.0.0
-    network_mode: host
-
+      REDIS_PORT: 16382
+      REDISCLI_AUTH: cluster1
+    command: redis-server --port 16382 --bind 0.0.0.0 --protected-mode no --cluster-enabled yes --cluster-announce-ip 127.0.0.1 --requirepass cluster1 --masterauth cluster1 --save "" --appendonly no
   cluster-2_master-1:
-    image: bitnami/redis-cluster:latest
+    <<: *redis
     environment:
-      - REDIS_PORT_NUMBER=16480
-      - REDIS_PASSWORD=cluster2
-      - REDIS_NODES=cluster-2_master-1 cluster-2_master-2 cluster-2_master-3
-      - REDIS_CLUSTER_DYNAMIC_IPS=no
-      - REDIS_CLUSTER_ANNOUNCE_IP=0.0.0.0
-      - REDISCLI_AUTH=cluster2
-    network_mode: host
+      REDIS_PORT: 16480
+      REDISCLI_AUTH: cluster2
+    command: redis-server --port 16480 --bind 0.0.0.0 --protected-mode no --cluster-enabled yes --cluster-announce-ip 127.0.0.1 --requirepass cluster2 --masterauth cluster2 --save "" --appendonly no
   cluster-2_master-2:
-    image: bitnami/redis-cluster:latest
+    <<: *redis
     environment:
-      - REDIS_PORT_NUMBER=16481
-      - REDIS_PASSWORD=cluster2
-      - REDIS_NODES=cluster-2_master-1 cluster-2_master-2 cluster-2_master-3
-      - REDIS_CLUSTER_DYNAMIC_IPS=no
-      - REDIS_CLUSTER_ANNOUNCE_IP=0.0.0.0
-    network_mode: host
+      REDIS_PORT: 16481
+      REDISCLI_AUTH: cluster2
+    command: redis-server --port 16481 --bind 0.0.0.0 --protected-mode no --cluster-enabled yes --cluster-announce-ip 127.0.0.1 --requirepass cluster2 --masterauth cluster2 --save "" --appendonly no
   cluster-2_master-3:
-    image: bitnami/redis-cluster:latest
+    <<: *redis
     environment:
-      - REDIS_PORT_NUMBER=16482
-      - REDIS_PASSWORD=cluster2
-      - REDIS_NODES=cluster-2_master-1 cluster-2_master-2 cluster-2_master-3
-      - REDIS_CLUSTER_DYNAMIC_IPS=no
-      - REDIS_CLUSTER_ANNOUNCE_IP=0.0.0.0
-    network_mode: host
-
+      REDIS_PORT: 16482
+      REDISCLI_AUTH: cluster2
+    command: redis-server --port 16482 --bind 0.0.0.0 --protected-mode no --cluster-enabled yes --cluster-announce-ip 127.0.0.1 --requirepass cluster2 --masterauth cluster2 --save "" --appendonly no
   redis-1:
-    image: bitnami/redis:latest
+    <<: *redis
     environment:
-      - REDIS_PORT_NUMBER=6380
-      - ALLOW_EMPTY_PASSWORD=yes
-    networks:
-      - dev
-    ports:
-      - '6380:6380'
-    command: /opt/bitnami/scripts/redis/run.sh --maxmemory 16mb
+      REDIS_PORT: 6380
+    command: redis-server --port 6380 --bind 0.0.0.0 --protected-mode no --maxmemory 16mb --save "" --appendonly no
   redis-2:
-    image: bitnami/redis:latest
+    <<: *redis
     environment:
-      - REDIS_PORT_NUMBER=6381
-      - ALLOW_EMPTY_PASSWORD=yes
-    networks:
-      - dev
-    ports:
-      - '6381:6381'
-    command: /opt/bitnami/scripts/redis/run.sh --maxmemory 16mb
-
-networks:
-  dev:
+      REDIS_PORT: 6381
+    command: redis-server --port 6381 --bind 0.0.0.0 --protected-mode no --maxmemory 16mb --save "" --appendonly no

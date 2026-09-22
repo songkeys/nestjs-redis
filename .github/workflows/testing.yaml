@@ -5,36 +5,43 @@ on:
       - main
 jobs:
   test:
-    name: Node ${{ matrix.node_version }} - ${{ matrix.architecture }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Node ${{ matrix.node }} / ${{ matrix.dependencies }}
+    runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
-        os:
-          - ubuntu-22.04
-        node_version:
-          - 14
-          - 16
-          - 18
-        architecture:
-          - x64
+        include:
+          - node: 20
+            dependencies: locked
+          - node: 24
+            dependencies: latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          version: latest
-      - uses: actions/setup-node@v3
+          node-version: ${{ matrix.node }}
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: ${{ matrix.node_version }}
-          check-latest: true
-          architecture: ${{ matrix.architecture }}
-      - run: docker compose up -d
+          version: 8.15.9
+      - run: pnpm install --frozen-lockfile
+      - run: docker compose up -d --wait
       - run: docker compose exec -T cluster-1_master-1 redis-cli --cluster create 127.0.0.1:16380 127.0.0.1:16381 127.0.0.1:16382 --cluster-yes
       - run: docker compose exec -T cluster-2_master-1 redis-cli --cluster create 127.0.0.1:16480 127.0.0.1:16481 127.0.0.1:16482 --cluster-yes
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm -F "@songkeys/nestjs-redis" lint
-      - run: pnpm -F "@songkeys/nestjs-redis" test
-      - run: pnpm -F "@songkeys/nestjs-redis" test:e2e
-      - run: pnpm -F "@songkeys/nestjs-redis-health" lint
-      - run: pnpm -F "@songkeys/nestjs-redis-health" test
-      - run: pnpm -F "@songkeys/nestjs-redis-health" test:e2e
-      - run: docker compose down -v
+      - run: pnpm -r lint
+      - run: pnpm -r run test --runInBand
+      - run: pnpm -r build
+      - run: pnpm -r run test:e2e --runInBand
+      - name: Install NestJS 12 and ioredis 6
+        if: matrix.dependencies == 'latest'
+        run: |
+          pnpm add -Dw @nestjs/common@12 @nestjs/core@12 @nestjs/testing@12 @nestjs/platform-fastify@12 @nestjs/terminus@12 ioredis@6 reflect-metadata@0.2 fastify@5
+          pnpm --filter "./packages/*" add -D @nestjs/common@12 @nestjs/core@12 ioredis@6
+          pnpm --filter "@songkeys/nestjs-redis-health" add -D @nestjs/terminus@12
+      - name: Validate latest dependency compatibility
+        if: matrix.dependencies == 'latest'
+        run: |
+          pnpm -r lint
+          pnpm -r build
+          node --test scripts/compatibility.test.cjs
+      - if: always()
+        run: docker compose down -v

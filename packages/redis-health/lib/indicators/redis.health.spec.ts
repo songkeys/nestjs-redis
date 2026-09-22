@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { HealthIndicatorService } from '@nestjs/terminus';
 import Redis, { Cluster } from 'ioredis';
 import { RedisHealthIndicator } from './redis.health';
 import { FAILED_CLUSTER_STATE, CANNOT_BE_READ, ABNORMALLY_MEMORY_USAGE, OPERATIONS_TIMEOUT } from '@health/messages';
@@ -29,7 +30,9 @@ describe('RedisHealthIndicator', () => {
     redis = new Redis();
     cluster = new Cluster([]);
 
-    const module: TestingModule = await Test.createTestingModule({ providers: [RedisHealthIndicator] }).compile();
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [RedisHealthIndicator, HealthIndicatorService]
+    }).compile();
     indicator = await module.resolve<RedisHealthIndicator>(RedisHealthIndicator);
   });
 
@@ -56,14 +59,16 @@ describe('RedisHealthIndicator', () => {
       ).rejects.toThrow();
     });
 
-    test('should throw an error if ping is rejected', async () => {
+    test('should return down if ping is rejected', async () => {
       const message = 'a redis error';
       jest.spyOn(redis, 'ping').mockRejectedValue(new Error(message));
 
-      await expect(indicator.checkHealth('', { type: 'redis', client: redis })).rejects.toThrow(message);
+      await expect(indicator.checkHealth('', { type: 'redis', client: redis })).resolves.toEqual({
+        '': { status: 'down', message }
+      });
     });
 
-    test('should throw an error if ping timed out', async () => {
+    test('should return down if ping timed out', async () => {
       jest.useFakeTimers();
 
       const waitPromise = (ms: number) =>
@@ -74,16 +79,16 @@ describe('RedisHealthIndicator', () => {
       jest.spyOn(redis, 'ping').mockImplementation(() => waitPromise(2000));
       const promise = indicator.checkHealth('', { type: 'redis', client: redis });
       jest.runAllTimers();
-      await expect(promise).rejects.toThrow(OPERATIONS_TIMEOUT(1000));
+      await expect(promise).resolves.toEqual({ '': { status: 'down', message: OPERATIONS_TIMEOUT(1000) } });
     });
 
-    test('should throw an error if used memory is greater than threshold', async () => {
+    test('should return down if used memory is greater than threshold', async () => {
       jest.spyOn(redis, 'ping').mockResolvedValue('PONG');
       jest.spyOn(redis, 'info').mockResolvedValue('# Memory used_memory:101000 used_memory_human:');
 
       await expect(
         indicator.checkHealth('redis', { type: 'redis', client: redis, memoryThreshold: 1000 * 100 })
-      ).rejects.toThrow(ABNORMALLY_MEMORY_USAGE);
+      ).resolves.toEqual({ redis: { status: 'down', message: ABNORMALLY_MEMORY_USAGE } });
     });
   });
 
@@ -96,25 +101,29 @@ describe('RedisHealthIndicator', () => {
       });
     });
 
-    test('should throw an error', async () => {
+    test('should return down on a connection error', async () => {
       const message = 'a redis error';
       mockClusterInfo.mockRejectedValue(new Error(message));
 
-      await expect(indicator.checkHealth('', { type: 'cluster', client: cluster })).rejects.toThrow(message);
+      await expect(indicator.checkHealth('', { type: 'cluster', client: cluster })).resolves.toEqual({
+        '': { status: 'down', message }
+      });
     });
 
-    test('should throw an error if cluster info is null', async () => {
+    test('should return down if cluster info is null', async () => {
       mockClusterInfo.mockResolvedValue(null);
 
-      await expect(indicator.checkHealth('', { type: 'cluster', client: cluster })).rejects.toThrow(CANNOT_BE_READ);
+      await expect(indicator.checkHealth('', { type: 'cluster', client: cluster })).resolves.toEqual({
+        '': { status: 'down', message: CANNOT_BE_READ }
+      });
     });
 
-    test('should throw an error if cluster info does not contain "cluster_state:ok"', async () => {
+    test('should return down if cluster info does not contain "cluster_state:ok"', async () => {
       mockClusterInfo.mockResolvedValue('cluster_state:fail');
 
-      await expect(indicator.checkHealth('', { type: 'cluster', client: cluster })).rejects.toThrow(
-        FAILED_CLUSTER_STATE
-      );
+      await expect(indicator.checkHealth('', { type: 'cluster', client: cluster })).resolves.toEqual({
+        '': { status: 'down', message: FAILED_CLUSTER_STATE }
+      });
     });
   });
 });
