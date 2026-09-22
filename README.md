@@ -14,7 +14,7 @@
   <h1 align="center">Nest Redis Module</h1>
 
   <p align="center">
-    Redis(ioredis & node-redis) module for Nest framework (node.js).
+    Redis(ioredis) module for Nest framework (node.js).
     <br />
     <a href="#usage"><strong>Explore the docs »</strong></a>
     <br />
@@ -50,6 +50,7 @@
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
+
   </ol>
 </details>
 
@@ -59,7 +60,7 @@
 
 - **Both redis & cluster are supported**: You can also specify multiple instances.
 - **Health**: Checks health of **redis & cluster** server.
-- **Tested**: Unit tests, Redis/Cluster E2E, and NestJS 12 / ioredis 6 compatibility checks.
+- **Tested**: Unit tests and Redis/Cluster integration tests on Node.js 24 and 26.
 - **Services**: Retrieves **redis & cluster** clients via `RedisService`, `ClusterService`.
 
 ## Migration
@@ -71,16 +72,9 @@ See the [migration guide](/docs/upstream-migration.md) before upgrading.
 
 ### Prerequisites
 
-This lib requires **Node.js >=16.13.0**, **NestJS 10, 11 or 12**, **ioredis 5 or 6**.
+This lib requires **Node.js >=24.11.0**, **NestJS 12**, and **ioredis 6**.
 
-- If you depend on **ioredis 5** & **NestJS 10**, please use version **10** of the lib.
-- If you depend on **ioredis 5** & **NestJS 9**, please use version **9** of the lib.
-- If you depend on **ioredis 5**, **NestJS 7** or **8**, please use [version 8](https://github.com/songkeys/nestjs-redis/tree/v8.2.2) of the lib.
-- If you depend on **ioredis 4**, please use [version 7](https://github.com/songkeys/nestjs-redis/tree/v7.0.0) of the lib.
-
-### Node-Redis
-
-If you prefre [node-redis](https://github.com/redis/node-redis), check out [this guide](), but it is in working progress.
+See the [v12 migration guide](https://github.com/songkeys/nestjs-redis/blob/main/docs/upstream-migration.md) for the breaking API changes.
 
 ### Installation
 

@@ -33,7 +33,6 @@
       <a href="#about-the-project">About The Project</a>
       <ul>
         <li><a href="#features">Features</a></li>
-        <li><a href="#test-coverage">Test coverage</a></li>
       </ul>
     </li>
     <li>
@@ -56,19 +55,13 @@
 
 - **Both redis & cluster are supported**.
 - **Health**: Checks health of **redis & cluster** server.
-- **Rigorously tested**: With 20+ tests and 100% code coverage.
-
-### Test coverage
-
-| Statements                                                                                                | Branches                                                                                              | Functions                                                                                               | Lines                                                                                           |
-| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| ![Statements](https://img.shields.io/badge/statements-100%25-brightgreen.svg?style=flat-square&logo=jest) | ![Branches](https://img.shields.io/badge/branches-100%25-brightgreen.svg?style=flat-square&logo=jest) | ![Functions](https://img.shields.io/badge/functions-100%25-brightgreen.svg?style=flat-square&logo=jest) | ![Lines](https://img.shields.io/badge/lines-100%25-brightgreen.svg?style=flat-square&logo=jest) |
+- **Tested**: Unit tests and Redis/Cluster integration tests on Node.js 24 and 26.
 
 ## Getting Started
 
 ### Prerequisites
 
-This lib requires **Node.js >=12.22.0**, **NestJS ^9.0.0**, **ioredis ^5.0.0**.
+This lib requires **Node.js >=24.11.0**, **NestJS 12**, **Terminus 12**, and **ioredis 6**.
 
 ### Installation
 
@@ -112,7 +105,10 @@ import Redis from 'ioredis';
 export class AppController {
   private readonly redis: Redis;
 
-  constructor(private readonly health: HealthCheckService, private readonly redisIndicator: RedisHealthIndicator) {
+  constructor(
+    private readonly health: HealthCheckService,
+    private readonly redisIndicator: RedisHealthIndicator
+  ) {
     this.redis = new Redis({ host: 'localhost', port: 6379, password: 'authpassword' });
   }
 
@@ -151,7 +147,7 @@ export class AppController {
 
 ## Compatibility
 
-Requires `@nestjs/terminus` 11 or 12. Terminus 10 is no longer supported.
+Requires `@nestjs/terminus` 12. Older Terminus versions are no longer supported.
 `RedisHealthIndicator.checkHealth()` returns a `down` result when a connection fails,
 times out, or exceeds the memory threshold. Pass it to `HealthCheckService.check()`
 to produce the standard HTTP 503 response for unhealthy services.
