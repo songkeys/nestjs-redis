@@ -22,40 +22,24 @@ export class AppModule {}
 
 **Now**, we can use redis in two ways.
 
-via decorator:
-
 ```ts
 import { Injectable } from '@nestjs/common';
-import { InjectRedis, DEFAULT_REDIS_NAMESPACE } from '@songkeys/nestjs-redis';
+import { RedisService, DEFAULT_REDIS } from '@songkeys/nestjs-redis';
 import Redis from 'ioredis';
 
 @Injectable()
 export class AppService {
-  constructor(
-    @InjectRedis() private readonly redis: Redis // or // @InjectRedis(DEFAULT_REDIS_NAMESPACE) private readonly redis: Redis
-  ) {}
-
-  async set() {
-    return await this.redis.set('key', 'value', 'EX', 10);
-  }
-}
-```
-
-via service:
-
-```ts
-import { Injectable } from '@nestjs/common';
-import { RedisService, DEFAULT_REDIS_NAMESPACE } from '@songkeys/nestjs-redis';
-import Redis from 'ioredis';
-
-@Injectable()
-export class AppService {
-  private readonly redis: Redis;
+  private readonly redis: Redis | null;
 
   constructor(private readonly redisService: RedisService) {
-    this.redis = this.redisService.getClient();
+    this.redis = this.redisService.getOrThrow();
+    // same as
+    // this.redis = this.redisService.getOrThrow(DEFAULT_REDIS);
+
     // or
-    // this.redis = this.redisService.getClient(DEFAULT_REDIS_NAMESPACE);
+    // this.redis = this.redisService.getOrNil();
+    // same as
+    // this.redis = this.redisService.getOrNil(DEFAULT_REDIS);
   }
 
   async set() {
@@ -88,7 +72,7 @@ import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
     }),
     ThrottlerModule.forRootAsync({
       useFactory(redisService: RedisService) {
-        const redis = redisService.getClient();
+        const redis = redisService.getOrThrow();
         return { ttl: 60, limit: 600, storage: new ThrottlerStorageRedisService(redis, 1000) };
       },
       inject: [RedisService]
@@ -106,7 +90,7 @@ export class AppModule {}
 | ------------- | ---------------------------------------------------------------------- | ----------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | closeClient   | `boolean`                                                              | `true`      | `false`  | If set to `true`, all clients will be closed automatically on nestjs application shutdown. To use `closeClient`, you **must enable listeners** by calling `app.enableShutdownHooks()`. [Read more about the application shutdown.](https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown) |
 | commonOptions | [RedisOptions](https://luin.github.io/ioredis/index.html#RedisOptions) | `undefined` | `false`  | Common options to be passed to each client.                                                                                                                                                                                                                                                                    |
-| readyLog      | `boolean`                                                              | `false`     | `false`  | If set to `true`, then ready logging will be displayed when the client is ready.                                                                                                                                                                                                                               |
+| readyLog      | `boolean`                                                              | `true`      | `false`  | If set to `true`, then ready logging will be displayed when the client is ready.                                                                                                                                                                                                                               |
 | errorLog      | `boolean`                                                              | `true`      | `false`  | If set to `true`, then errors that occurred while connecting will be displayed by the built-in logger.                                                                                                                                                                                                         |
 | config        | `RedisClientOptions` \| `RedisClientOptions`[]                         | `undefined` | `false`  | Used to specify single or multiple clients.                                                                                                                                                                                                                                                                    |
 
@@ -114,7 +98,7 @@ export class AppModule {}
 
 | Name                 | Type                 | Default     | Required | Description                                                                                                                                                                                                    |
 | -------------------- | -------------------- | ----------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| namespace            | `string` \| `symbol` | `'default'` | `false`  | Client name. If client name is not given then it will be called `"default"`. Different clients must have different names. You can import `DEFAULT_REDIS_NAMESPACE` to use it.                                  |
+| namespace            | `string` \| `symbol` | `'default'` | `false`  | Client name. If client name is not given then it will be called `"default"`. Different clients must have different names. You can import `DEFAULT_REDIS` to use it.                                            |
 | url                  | `string`             | `undefined` | `false`  | URI scheme to be used to specify connection options as a [redis://](https://www.iana.org/assignments/uri-schemes/prov/redis) URL or [rediss://](https://www.iana.org/assignments/uri-schemes/prov/rediss) URL. |
 | path                 | `string`             | `undefined` | `false`  | Path to be used for Unix domain sockets.                                                                                                                                                                       |
 | onClientCreated      | `function`           | `undefined` | `false`  | Function to be executed as soon as the client is created.                                                                                                                                                      |
@@ -497,18 +481,3 @@ export class AppModule {}
 ```
 
 And there we go.
-
-### Testing
-
-This package exposes `getRedisToken()` function that returns an internal injection token based on the provided context. Using this token, you can provide a mock implementation of the redis instance using any of the standard custom provider techniques, including `useClass`, `useValue`, and `useFactory`.
-
-```ts
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRedisToken } from '@songkeys/nestjs-redis';
-
-const module: TestingModule = await Test.createTestingModule({
-  providers: [{ provide: getRedisToken('namespace'), useValue: mockedInstance }, YourService]
-}).compile();
-```
-
-A working example is available [here](/sample).

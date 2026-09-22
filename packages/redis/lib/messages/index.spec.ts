@@ -1,13 +1,13 @@
-import { READY_LOG, ERROR_LOG } from '.';
+import { generateReadyMessage, generateErrorMessage } from '.';
 
-describe('READY_LOG', () => {
+describe('generateReadyMessage', () => {
   test('should return a string', () => {
-    expect(READY_LOG('name')).toBe(`name: connected successfully to the server`);
+    expect(generateReadyMessage('name')).toBe(`name: the connection was successfully established`);
   });
 });
 
-describe('ERROR_LOG', () => {
+describe('generateErrorMessage', () => {
   test('should return a string', () => {
-    expect(ERROR_LOG('name', 'message')).toBe(`name: message`);
+    expect(generateErrorMessage('name', 'message')).toBe(`name: message`);
   });
 });

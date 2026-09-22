@@ -1,10 +1,8 @@
-[![NPM][npm-shield]][npm-url]
+![NPM Version](https://img.shields.io/npm/v/%40songkeys%2Fnestjs-redis?style=for-the-badge)
 [![Downloads][downloads-shield]][downloads-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![License][license-shield]][license-url]
-![Vulnerabilities][vulnerabilities-shield]
-[![Workflow][workflow-shield]][workflow-url]
 
 <p align="center">
   <a href="https://nestjs.com/">
@@ -21,7 +19,7 @@
     <a href="#usage"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="/sample">View Demos</a>
+    <a href="/docs/latest/redis.md">View Examples</a>
     ·
     <a href="https://github.com/songkeys/nestjs-redis/issues/new/choose">Report Bug</a>
     ·
@@ -36,7 +34,7 @@
       <a href="#about-the-project">About The Project</a>
       <ul>
         <li><a href="#features">Features</a></li>
-        <li><a href="#test-coverage">Test coverage</a></li>
+
       </ul>
     </li>
     <li>
@@ -61,25 +59,24 @@
 
 - **Both redis & cluster are supported**: You can also specify multiple instances.
 - **Health**: Checks health of **redis & cluster** server.
-- **Rigorously tested**: With 100+ tests and 100% code coverage.
-- **Decorators**: Injects **redis & cluster** clients via `@InjectRedis()`, `@InjectCluster()`.
-- **Services**: Retrieves **redis & cluster** clients via `RedisService`, `ClusterService`.
-- **Testing**: Generates an injection token via `getRedisToken`, `getClusterToken`.
+- **Tested**: Unit tests, Redis/Cluster E2E, and NestJS 12 / ioredis 6 compatibility checks.
+- **Services**: Retrieves **redis & cluster** connection via `RedisService`, `ClusterService`.
 
-### Test coverage
+## Migration
 
-| Statements                                                                                                | Branches                                                                                              | Functions                                                                                               | Lines                                                                                           |
-| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| ![Statements](https://img.shields.io/badge/statements-100%25-brightgreen.svg?style=flat-square&logo=jest) | ![Branches](https://img.shields.io/badge/branches-100%25-brightgreen.svg?style=flat-square&logo=jest) | ![Functions](https://img.shields.io/badge/functions-100%25-brightgreen.svg?style=flat-square&logo=jest) | ![Lines](https://img.shields.io/badge/lines-100%25-brightgreen.svg?style=flat-square&logo=jest) |
+This branch adopts the upstream Service API and removes the old injection decorators.
+See the [migration guide](/docs/upstream-migration.md) before upgrading.
 
 ## Getting Started
 
 ### Prerequisites
 
-This lib requires **Node.js >=12.22.0**, **NestJS ^9.0.0**, **ioredis ^5.0.0**.
+This lib requires **Node.js >=16.13.0**, **NestJS 10, 11 or 12**, **ioredis 5 or 6**.
 
-- If you depend on **ioredis 4**, please use [version 7](https://github.com/songkeys/nestjs-redis/tree/v7.0.0) of the lib.
+- If you depend on **ioredis 5** & **NestJS 10**, please use version **10** of the lib.
+- If you depend on **ioredis 5** & **NestJS 9**, please use version **9** of the lib.
 - If you depend on **ioredis 5**, **NestJS 7** or **8**, please use [version 8](https://github.com/songkeys/nestjs-redis/tree/v8.2.2) of the lib.
+- If you depend on **ioredis 4**, please use [version 7](https://github.com/songkeys/nestjs-redis/tree/v7.0.0) of the lib.
 
 ### Installation
 
@@ -113,8 +110,9 @@ pnpm add @songkeys/nestjs-redis ioredis
 
 ### Legacy
 
-- version 7, [click here](/docs/v7)
+- version 9, [click here](/docs/v9)
 - version 8, [click here](/docs/v8)
+- version 7, [click here](/docs/v7)
 
 ## FAQs
 
@@ -126,103 +124,6 @@ pnpm add @songkeys/nestjs-redis ioredis
 [A circular dependency](https://docs.nestjs.com/fundamentals/circular-dependency) might also be caused when using "barrel files"/index.ts files to group imports. Barrel files should be omitted when it comes to module/provider classes. For example, barrel files should not be used when importing files within the same directory as the barrel file, i.e. `cats/cats.controller` should not import `cats` to import the `cats/cats.service` file. For more details please also see [this github issue](https://github.com/nestjs/nest/issues/1181#issuecomment-430197191).
 
 </details>
-
-### "Cannot resolve dependency" error
-
-<details>
-  <summary>Click to expand</summary>
-
-If you encountered an error like this:
-
-```
-Nest can't resolve dependencies of the <provider> (?). Please make sure that the argument <unknown_token> at index [<index>] is available in the <module> context.
-
-Potential solutions:
-- If <unknown_token> is a provider, is it part of the current <module>?
-- If <unknown_token> is exported from a separate @Module, is that module imported within <module>?
-  @Module({
-    imports: [ /* the Module containing <unknown_token> */ ]
-  })
-```
-
-Please make sure that the `RedisModule` is added directly to the `imports` array of `@Module()` decorator of "Root Module"(if `isGlobal` is true) or "Feature Module"(if `isGlobal` is false).
-
-Examples of code:
-
-```ts
-// redis-config.service.ts
-import { Injectable } from '@nestjs/common';
-import { RedisModuleOptions, RedisOptionsFactory } from '@songkeys/nestjs-redis';
-
-@Injectable()
-export class RedisConfigService implements RedisOptionsFactory {
-  createRedisOptions(): RedisModuleOptions {
-    return {
-      readyLog: true,
-      config: {
-        host: 'localhost',
-        port: 6379,
-        password: 'authpassword'
-      }
-    };
-  }
-}
-```
-
-### ✅ Correct
-
-```ts
-// app.module.ts
-import { Module } from '@nestjs/common';
-import { RedisModule } from '@songkeys/nestjs-redis';
-import { RedisConfigService } from './redis-config.service';
-
-@Module({
-  imports: [
-    RedisModule.forRootAsync({
-      useClass: RedisConfigService
-    })
-  ]
-})
-export class AppModule {}
-```
-
-### ❌ Incorrect
-
-```ts
-// my-redis.module.ts
-import { Module } from '@nestjs/common';
-import { RedisModule } from '@songkeys/nestjs-redis';
-import { RedisConfigService } from './redis-config.service';
-
-@Module({
-  imports: [
-    RedisModule.forRootAsync({
-      useClass: RedisConfigService
-    })
-  ]
-})
-export class MyRedisModule {}
-```
-
-```ts
-// app.module.ts
-import { Module } from '@nestjs/common';
-import { MyRedisModule } from './my-redis.module';
-
-@Module({
-  imports: [MyRedisModule]
-})
-export class AppModule {}
-```
-
-</details>
-
-## Roadmap
-
-- [x] Compatible with **NestJS ^9**
-- [ ] Flexible custom logger
-- [ ] Add some examples for **TLS**
 
 ## Contributing
 
@@ -246,10 +147,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 - [Full-Featured Redis Client - ioredis](https://github.com/luin/ioredis)
 - [Official Redis Documentation](https://redis.io/)
 - [Official Redis Docker Image](https://hub.docker.com/_/redis)
-- [Official Bitnami Redis Docker Image](https://hub.docker.com/r/bitnami/redis)
 
-[npm-shield]: https://img.shields.io/npm/v/@songkeys/nestjs-redis/latest?style=for-the-badge
-[npm-url]: https://www.npmjs.com/package/@songkeys/nestjs-redis
 [downloads-shield]: https://img.shields.io/npm/dm/@songkeys/nestjs-redis?style=for-the-badge
 [downloads-url]: https://www.npmjs.com/package/@songkeys/nestjs-redis
 [stars-shield]: https://img.shields.io/github/stars/songkeys/nestjs-redis?style=for-the-badge
@@ -258,6 +156,3 @@ Distributed under the MIT License. See `LICENSE` for more information.
 [issues-url]: https://github.com/songkeys/nestjs-redis/issues
 [license-shield]: https://img.shields.io/npm/l/@songkeys/nestjs-redis?style=for-the-badge
 [license-url]: https://github.com/songkeys/nestjs-redis/blob/main/LICENSE
-[vulnerabilities-shield]: https://img.shields.io/snyk/vulnerabilities/npm/@songkeys/nestjs-redis?style=for-the-badge
-[workflow-shield]: https://img.shields.io/github/actions/workflow/status/songkeys/nestjs-redis/testing.yaml?label=TESTING&style=for-the-badge
-[workflow-url]: https://github.com/songkeys/nestjs-redis/actions/workflows/testing.yaml

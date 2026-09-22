@@ -1,64 +1,64 @@
 import { Module, DynamicModule, Provider, OnApplicationShutdown } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { RedisModuleOptions, RedisModuleAsyncOptions, RedisClients } from './interfaces';
-import { RedisManager } from './redis-manager';
+import { RedisService } from './redis.service';
 import {
   createOptionsProvider,
   createAsyncProviders,
-  createRedisClientProviders,
   redisClientsProvider,
   mergedOptionsProvider
 } from './redis.providers';
 import { REDIS_CLIENTS, REDIS_MERGED_OPTIONS } from './redis.constants';
-import { destroy } from './common';
-import { parseNamespace, isResolution, isRejection, isError } from '@/utils';
+import { isError } from '@/utils';
 import { logger } from './redis-logger';
 import { MissingConfigurationsError } from '@/errors';
-import { ERROR_LOG } from '@/messages';
+import { generateErrorMessage } from '@/messages';
+import { removeListeners } from './common';
 
-/**
- * @public
- */
 @Module({})
 export class RedisModule implements OnApplicationShutdown {
   constructor(private moduleRef: ModuleRef) {}
 
   /**
    * Registers the module synchronously.
+   *
+   * @param options - The module options
+   * @param isGlobal - Whether to register in the global scope
+   * @returns A DynamicModule
    */
   static forRoot(options: RedisModuleOptions = {}, isGlobal = true): DynamicModule {
-    const redisClientProviders = createRedisClientProviders();
     const providers: Provider[] = [
       createOptionsProvider(options),
       redisClientsProvider,
       mergedOptionsProvider,
-      RedisManager,
-      ...redisClientProviders
+      RedisService
     ];
 
     return {
       global: isGlobal,
       module: RedisModule,
       providers,
-      exports: [RedisManager, ...redisClientProviders]
+      exports: [RedisService]
     };
   }
 
   /**
    * Registers the module asynchronously.
+   *
+   * @param options - The async module options
+   * @param isGlobal - Whether to register in the global scope
+   * @returns A DynamicModule
    */
   static forRootAsync(options: RedisModuleAsyncOptions, isGlobal = true): DynamicModule {
     if (!options.useFactory && !options.useClass && !options.useExisting) {
       throw new MissingConfigurationsError();
     }
 
-    const redisClientProviders = createRedisClientProviders();
     const providers: Provider[] = [
       ...createAsyncProviders(options),
       redisClientsProvider,
       mergedOptionsProvider,
-      RedisManager,
-      ...redisClientProviders,
+      RedisService,
       ...(options.extraProviders ?? [])
     ];
 
@@ -67,19 +67,23 @@ export class RedisModule implements OnApplicationShutdown {
       module: RedisModule,
       imports: options.imports,
       providers,
-      exports: [RedisManager, ...redisClientProviders]
+      exports: [RedisService]
     };
   }
 
-  async onApplicationShutdown(): Promise<void> {
-    const { closeClient } = this.moduleRef.get<RedisModuleOptions>(REDIS_MERGED_OPTIONS);
-    if (closeClient) {
-      const results = await destroy(this.moduleRef.get<RedisClients>(REDIS_CLIENTS));
-      results.forEach(([namespace, quit]) => {
-        if (isResolution(namespace) && isRejection(quit) && isError(quit.reason)) {
-          logger.error(ERROR_LOG(parseNamespace(namespace.value), quit.reason.message), quit.reason.stack);
-        }
-      });
+  async onApplicationShutdown() {
+    const { closeClient } = this.moduleRef.get<RedisModuleOptions>(REDIS_MERGED_OPTIONS, { strict: false });
+    if (!closeClient) return;
+    const clients = this.moduleRef.get<RedisClients>(REDIS_CLIENTS, { strict: false });
+    for (const [namespace, client] of clients) {
+      try {
+        if (client.status === 'end') continue;
+        await client.quit();
+      } catch (e) {
+        if (isError(e)) logger.error(generateErrorMessage(namespace, e.message), e.stack);
+      } finally {
+        removeListeners(client);
+      }
     }
   }
 }

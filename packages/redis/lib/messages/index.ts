@@ -1,2 +1,8 @@
-export const READY_LOG = (namespace: string) => `${namespace}: connected successfully to the server`;
-export const ERROR_LOG = (namespace: string, message: string) => `${namespace}: ${message}`;
+import { Namespace } from '@/interfaces';
+import { parseNamespace } from '@/utils';
+
+export const generateReadyMessage = (namespace: Namespace) =>
+  `${parseNamespace(namespace)}: the connection was successfully established`;
+
+export const generateErrorMessage = (namespace: Namespace, message: string) =>
+  `${parseNamespace(namespace)}: ${message}`;

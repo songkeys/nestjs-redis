@@ -4,7 +4,7 @@ const { test } = require('node:test');
 require('reflect-metadata');
 const { Test } = require('@nestjs/testing');
 const { TerminusModule, HealthCheckService } = require('@nestjs/terminus');
-const { RedisModule, RedisManager, ClusterModule, ClusterManager } = require('../packages/redis/dist');
+const { RedisModule, RedisService, ClusterModule, ClusterService } = require('../packages/redis/dist');
 const { RedisHealthModule, RedisHealthIndicator } = require('../packages/redis-health/dist');
 
 test('NestJS 12 and ioredis 6 support connections, health checks and shutdown', { timeout: 10000 }, async () => {
@@ -38,12 +38,12 @@ test('NestJS 12 and ioredis 6 support connections, health checks and shutdown', 
     ]
   }).compile();
   await app.init();
-  const manager = app.get(RedisManager);
-  const redis = manager.getClient();
-  const secondary = manager.getClient('secondary');
-  const cluster = app.get(ClusterManager).getClient();
+  const manager = app.get(RedisService);
+  const redis = manager.getOrThrow();
+  const secondary = manager.getOrThrow('secondary');
+  const cluster = app.get(ClusterService).getOrThrow();
   try {
-    assert.throws(() => manager.getClient('missing'));
+    assert.throws(() => manager.getOrThrow('missing'));
     for (const client of [redis, secondary, cluster]) {
       assert.equal(await client.set('nestjs-redis:compatibility', 'ok', 'EX', 30), 'OK');
       assert.equal(await client.get('nestjs-redis:compatibility'), 'ok');

@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "ES2021",
+    "lib": ["ES2021"],
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": false,
+    "importHelpers": true,
+    "strict": true,
+    "skipLibCheck": true
+  }
+}

@@ -1,48 +1,55 @@
-import { Type, ModuleMetadata, Provider } from '@nestjs/common';
-import type { Cluster } from 'ioredis';
-import { ClusterNode, ClusterOptions } from 'ioredis';
-import { ClientNamespace } from '@/interfaces';
+import { Type, ModuleMetadata, Provider, InjectionToken, OptionalFactoryDependency } from '@nestjs/common';
+import type { Cluster, ClusterNode, ClusterOptions } from 'ioredis';
+import { Namespace } from '@/interfaces';
 
-/**
- * @public
- */
 export interface ClusterClientOptions extends ClusterOptions {
   /**
-   * Client name. If client name is not given then it will be called "default".
-   * Different clients must have different names.
+   * Name of the client. If the name is not given then it will be set to "default".
+   *
+   * Please note that you shouldn't have multiple connections without a namespace, or with the same namespace, otherwise they will get overridden.
+   *
+   * For the default name you can also explicitly import `DEFAULT_CLUSTER`.
    *
    * @defaultValue `"default"`
    */
-  namespace?: ClientNamespace;
-
+  namespace?: Namespace;
   /**
    * List of cluster nodes.
    *
    * @example
    * ```ts
    * // Connect with url
-   * ['redis://:authpassword@127.0.0.1:16380']
+   * nodes: ['redis://:authpassword@127.0.0.1:16380']
    * ```
    *
    * @example
    * ```ts
    * // Connect with host, port
-   * [{ host: '127.0.0.1', port: 16380 }]
+   * nodes: [
+   *   {
+   *     port: 6380,
+   *     host: '127.0.0.1'
+   *   },
+   *   {
+   *     port: 6381,
+   *     host: '127.0.0.1'
+   *   }
+   * ]
    * ```
    */
   nodes: ClusterNode[];
-
   /**
-   * Function to be executed as soon as the client is created.
+   * Called after the client has been created.
+   */
+  created?: (client: Cluster) => void;
+  /**
+   * Function to be executed after the client is created.
    *
-   * @param client - The new client created
+   * @deprecated Use the new `created` instead.
    */
   onClientCreated?: (client: Cluster) => void;
 }
 
-/**
- * @public
- */
 export interface ClusterModuleOptions {
   /**
    * If set to `true`, all clients will be closed automatically on nestjs application shutdown.
@@ -50,43 +57,32 @@ export interface ClusterModuleOptions {
    * @defaultValue `true`
    */
   closeClient?: boolean;
-
   /**
    * If set to `true`, then ready logging will be displayed when the client is ready.
    *
-   * @defaultValue `false`
+   * @defaultValue `true`
    */
   readyLog?: boolean;
-
   /**
    * If set to `true`, then errors that occurred while connecting will be displayed by the built-in logger.
    *
    * @defaultValue `true`
    */
   errorLog?: boolean;
-
   /**
    * Used to specify single or multiple clients.
    */
   config: ClusterClientOptions | ClusterClientOptions[];
 }
 
-/**
- * @public
- */
 export interface ClusterModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useFactory?: (...args: any[]) => ClusterModuleOptions | Promise<ClusterModuleOptions>;
+  useFactory?: (...args: unknown[]) => ClusterModuleOptions | Promise<ClusterModuleOptions>;
   useClass?: Type<ClusterOptionsFactory>;
   useExisting?: Type<ClusterOptionsFactory>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  inject?: any[];
+  inject?: (InjectionToken | OptionalFactoryDependency)[];
   extraProviders?: Provider[];
 }
 
-/**
- * @public
- */
 export interface ClusterOptionsFactory {
   createClusterOptions: () => ClusterModuleOptions | Promise<ClusterModuleOptions>;
 }
