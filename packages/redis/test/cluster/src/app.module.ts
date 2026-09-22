@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ClusterModule, ClusterModuleOptions } from '@/.';
-import { InjectController } from './controllers/inject.controller';
-import { ManagerController } from './controllers/manager.controller';
+import { ServiceController } from './controllers/service.controller';
 
 @Module({
   imports: [
@@ -23,6 +22,6 @@ import { ManagerController } from './controllers/manager.controller';
       }
     })
   ],
-  controllers: [InjectController, ManagerController]
+  controllers: [ServiceController]
 })
 export class AppModule {}

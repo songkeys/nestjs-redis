@@ -1,21 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import Redis from 'ioredis';
 import {
   createOptionsProvider,
   createAsyncProviders,
   createAsyncOptionsProvider,
   redisClientsProvider,
-  createRedisClientProviders,
   createAsyncOptions,
   mergedOptionsProvider
 } from './redis.providers';
-import { RedisOptionsFactory, RedisModuleAsyncOptions, RedisClients, RedisModuleOptions } from './interfaces';
+import { RedisOptionsFactory, RedisModuleAsyncOptions, RedisModuleOptions } from './interfaces';
 import { REDIS_OPTIONS, REDIS_CLIENTS, REDIS_MERGED_OPTIONS } from './redis.constants';
-import { namespaces } from './common';
-import { RedisManager } from './redis-manager';
 import { defaultRedisModuleOptions } from './default-options';
 
-jest.mock('ioredis', () => jest.fn(() => ({})));
+jest.mock('ioredis', () => ({ Redis: jest.fn() }));
 
 describe('createOptionsProvider', () => {
   test('should work correctly', () => {
@@ -102,36 +97,6 @@ describe('createAsyncOptionsProvider', () => {
 
   test('without options', () => {
     expect(createAsyncOptionsProvider({})).toEqual({ provide: REDIS_OPTIONS, useValue: {} });
-  });
-});
-
-describe('createRedisClientProviders', () => {
-  let clients: RedisClients;
-  let client1: Redis;
-  let client2: Redis;
-
-  beforeEach(async () => {
-    clients = new Map();
-    clients.set('client1', new Redis());
-    clients.set('client2', new Redis());
-    namespaces.set('client1', 'client1');
-    namespaces.set('client2', 'client2');
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [{ provide: REDIS_CLIENTS, useValue: clients }, RedisManager, ...createRedisClientProviders()]
-    }).compile();
-
-    client1 = module.get<Redis>('client1');
-    client2 = module.get<Redis>('client2');
-  });
-
-  afterEach(() => {
-    namespaces.clear();
-  });
-
-  test('should work correctly', () => {
-    expect(client1).toBeDefined();
-    expect(client2).toBeDefined();
   });
 });
 

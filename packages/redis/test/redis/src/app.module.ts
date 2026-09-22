@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { RedisModule } from '@/.';
 import { RedisConfigService } from './redis-config.service';
-import { InjectController } from './controllers/inject.controller';
-import { ManagerController } from './controllers/manager.controller';
+import { ServiceController } from './controllers/service.controller';
 
 @Module({
   imports: [
@@ -10,6 +9,6 @@ import { ManagerController } from './controllers/manager.controller';
       useClass: RedisConfigService
     })
   ],
-  controllers: [InjectController, ManagerController]
+  controllers: [ServiceController]
 })
 export class AppModule {}

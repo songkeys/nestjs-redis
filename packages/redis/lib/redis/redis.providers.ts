@@ -1,9 +1,7 @@
 import { Provider, FactoryProvider, ValueProvider } from '@nestjs/common';
-import type { Redis } from 'ioredis';
 import { RedisModuleOptions, RedisModuleAsyncOptions, RedisOptionsFactory, RedisClients } from './interfaces';
-import { REDIS_OPTIONS, REDIS_CLIENTS, DEFAULT_REDIS_NAMESPACE, REDIS_MERGED_OPTIONS } from './redis.constants';
-import { createClient, namespaces } from './common';
-import { RedisManager } from './redis-manager';
+import { REDIS_OPTIONS, REDIS_CLIENTS, DEFAULT_REDIS, REDIS_MERGED_OPTIONS } from './redis.constants';
+import { create } from './common';
 import { defaultRedisModuleOptions } from './default-options';
 
 export const createOptionsProvider = (options: RedisModuleOptions): ValueProvider<RedisModuleOptions> => ({
@@ -62,36 +60,31 @@ export const createAsyncOptionsProvider = (options: RedisModuleAsyncOptions): Pr
   };
 };
 
-export const createRedisClientProviders = (): FactoryProvider<Redis>[] => {
-  const providers: FactoryProvider<Redis>[] = [];
-  namespaces.forEach((token, namespace) => {
-    providers.push({
-      provide: token,
-      useFactory: (redisManager: RedisManager) => redisManager.getClient(namespace),
-      inject: [RedisManager]
-    });
-  });
-  return providers;
-};
-
 export const redisClientsProvider: FactoryProvider<RedisClients> = {
   provide: REDIS_CLIENTS,
   useFactory: (options: RedisModuleOptions) => {
     const clients: RedisClients = new Map();
     if (Array.isArray(options.config)) {
-      options.config.forEach(item =>
+      for (const item of options.config) {
         clients.set(
-          item.namespace ?? DEFAULT_REDIS_NAMESPACE,
-          createClient(
+          item.namespace ?? DEFAULT_REDIS,
+          create(
             { ...options.commonOptions, ...item },
-            { readyLog: options.readyLog, errorLog: options.errorLog }
+            { readyLog: options.readyLog, errorLog: options.errorLog, beforeCreate: options.beforeCreate }
           )
-        )
-      );
+        );
+      }
     } else if (options.config) {
       clients.set(
-        options.config.namespace ?? DEFAULT_REDIS_NAMESPACE,
-        createClient(options.config, { readyLog: options.readyLog, errorLog: options.errorLog })
+        options.config.namespace ?? DEFAULT_REDIS,
+        create(
+          { ...options.commonOptions, ...options.config },
+          {
+            readyLog: options.readyLog,
+            errorLog: options.errorLog,
+            beforeCreate: options.beforeCreate
+          }
+        )
       );
     }
     return clients;

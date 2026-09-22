@@ -1,13 +1,12 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "outDir": "./dist",
+    "outDir": "dist",
     "paths": {
       "@/*": ["../redis/lib/*"],
-      "@health/*": ["lib/*"]
+      "@health/*": ["./lib/*"]
     }
   },
   "include": ["lib", "test"],
-  "files": ["../../node_modules/jest-extended/types/index.d.ts"]
+  "files": ["../global.d.ts"]
 }

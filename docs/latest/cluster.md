@@ -19,32 +19,11 @@ import { ClusterModule } from '@songkeys/nestjs-redis';
 export class AppModule {}
 ```
 
-**Now**, we can use cluster in two ways.
-
-via decorator:
+**Now**, retrieve a connection with `ClusterService`:
 
 ```ts
 import { Injectable } from '@nestjs/common';
-import { InjectCluster, DEFAULT_CLUSTER_NAMESPACE } from '@songkeys/nestjs-redis';
-import { Cluster } from 'ioredis';
-
-@Injectable()
-export class AppService {
-  constructor(
-    @InjectCluster() private readonly cluster: Cluster // or // @InjectCluster(DEFAULT_CLUSTER_NAMESPACE) private readonly cluster: Cluster
-  ) {}
-
-  async set() {
-    return await this.cluster.set('key', 'value', 'EX', 10);
-  }
-}
-```
-
-via service:
-
-```ts
-import { Injectable } from '@nestjs/common';
-import { ClusterService, DEFAULT_CLUSTER_NAMESPACE } from '@songkeys/nestjs-redis';
+import { ClusterService, DEFAULT_CLUSTER } from '@songkeys/nestjs-redis';
 import { Cluster } from 'ioredis';
 
 @Injectable()
@@ -52,9 +31,9 @@ export class AppService {
   private readonly cluster: Cluster;
 
   constructor(private readonly clusterService: ClusterService) {
-    this.cluster = this.clusterService.getClient();
+    this.cluster = this.clusterService.getOrThrow();
     // or
-    // this.cluster = this.clusterService.getClient(DEFAULT_CLUSTER_NAMESPACE);
+    // this.cluster = this.clusterService.getOrThrow(DEFAULT_CLUSTER);
   }
 
   async set() {
@@ -80,12 +59,12 @@ export class AppService {
 
 ### [ClusterClientOptions](/packages/redis/lib/cluster/interfaces/cluster-module-options.interface.ts)
 
-| Name                   | Type                                                             | Default     | Required | Description                                                                                                                                                                   |
-| ---------------------- | ---------------------------------------------------------------- | ----------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| namespace              | `string` \| `symbol`                                             | `'default'` | `false`  | Client name. If client name is not given then it will be called "default". Different clients must have different names. You can import `DEFAULT_CLUSTER_NAMESPACE` to use it. |
-| nodes                  | `{ host?: string; port?: number }[]` \| `string[]` \| `number[]` | `undefined` | `true`   | List of cluster nodes.                                                                                                                                                        |
-| onClientCreated        | `function`                                                       | `undefined` | `false`  | Function to be executed as soon as the client is created.                                                                                                                     |
-| **...** ClusterOptions | `ClusterOptions`                                                 | -           | `false`  | Inherits from [ClusterOptions](https://luin.github.io/ioredis/interfaces/ClusterOptions.html).                                                                                |
+| Name                   | Type                                                             | Default     | Required | Description                                                                                                                                                         |
+| ---------------------- | ---------------------------------------------------------------- | ----------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| namespace              | `string` \| `symbol`                                             | `'default'` | `false`  | Client name. If client name is not given then it will be called "default". Different clients must have different names. You can import `DEFAULT_CLUSTER` to use it. |
+| nodes                  | `{ host?: string; port?: number }[]` \| `string[]` \| `number[]` | `undefined` | `true`   | List of cluster nodes.                                                                                                                                              |
+| onClientCreated        | `function`                                                       | `undefined` | `false`  | Function to be executed as soon as the client is created.                                                                                                           |
+| **...** ClusterOptions | `ClusterOptions`                                                 | -           | `false`  | Inherits from [ClusterOptions](https://luin.github.io/ioredis/interfaces/ClusterOptions.html).                                                                      |
 
 ### Asynchronous configuration
 
@@ -345,15 +324,12 @@ export class CatsModule {}
 
 ### Testing
 
-This package exposes `getClusterToken()` function that returns an internal injection token based on the provided context. Using this token, you can provide a mock implementation of the cluster instance using any of the standard custom provider techniques, including `useClass`, `useValue`, and `useFactory`.
+Provide a mock `ClusterService` with the connection returned by `getOrThrow()`:
 
 ```ts
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRedisToken } from '@songkeys/nestjs-redis';
+import { ClusterService } from '@songkeys/nestjs-redis';
 
-const module: TestingModule = await Test.createTestingModule({
-  providers: [{ provide: getClusterToken('namespace'), useValue: mockedInstance }, YourService]
+const moduleRef = await Test.createTestingModule({
+  providers: [{ provide: ClusterService, useValue: { getOrThrow: () => mockedInstance } }, YourService]
 }).compile();
 ```
-
-A working example is available [here](/sample).

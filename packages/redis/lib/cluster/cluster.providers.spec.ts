@@ -1,18 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { Cluster } from 'ioredis';
 import {
   createOptionsProvider,
   createAsyncProviders,
   createAsyncOptionsProvider,
   clusterClientsProvider,
-  createClusterClientProviders,
   createAsyncOptions,
   mergedOptionsProvider
 } from './cluster.providers';
-import { ClusterOptionsFactory, ClusterModuleAsyncOptions, ClusterClients, ClusterModuleOptions } from './interfaces';
+import { ClusterOptionsFactory, ClusterModuleAsyncOptions, ClusterModuleOptions } from './interfaces';
 import { CLUSTER_OPTIONS, CLUSTER_CLIENTS, CLUSTER_MERGED_OPTIONS } from './cluster.constants';
-import { namespaces } from './common';
-import { ClusterManager } from './cluster-manager';
 import { defaultClusterModuleOptions } from './default-options';
 
 jest.mock('ioredis', () => ({
@@ -107,36 +102,6 @@ describe('createAsyncOptionsProvider', () => {
 
   test('without options', () => {
     expect(createAsyncOptionsProvider({})).toEqual({ provide: CLUSTER_OPTIONS, useValue: {} });
-  });
-});
-
-describe('createClusterClientProviders', () => {
-  let clients: ClusterClients;
-  let client1: Cluster;
-  let client2: Cluster;
-
-  beforeEach(async () => {
-    clients = new Map();
-    clients.set('client1', new Cluster([]));
-    clients.set('client2', new Cluster([]));
-    namespaces.set('client1', 'client1');
-    namespaces.set('client2', 'client2');
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [{ provide: CLUSTER_CLIENTS, useValue: clients }, ClusterManager, ...createClusterClientProviders()]
-    }).compile();
-
-    client1 = module.get<Cluster>('client1');
-    client2 = module.get<Cluster>('client2');
-  });
-
-  afterEach(() => {
-    namespaces.clear();
-  });
-
-  test('should work correctly', () => {
-    expect(client1).toBeDefined();
-    expect(client2).toBeDefined();
   });
 });
 

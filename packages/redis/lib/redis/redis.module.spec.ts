@@ -1,11 +1,9 @@
 import { ModuleRef } from '@nestjs/core';
 import { RedisModule } from './redis.module';
 import { RedisModuleAsyncOptions } from './interfaces';
-import { destroy } from './common';
 import { logger } from './redis-logger';
-import { REDIS_CLIENTS, REDIS_MERGED_OPTIONS } from './redis.constants';
+import { REDIS_MERGED_OPTIONS } from './redis.constants';
 
-jest.mock('./common');
 jest.mock('./redis-logger', () => ({
   logger: {
     error: jest.fn()
@@ -52,30 +50,28 @@ describe('forRootAsync', () => {
 });
 
 describe('onApplicationShutdown', () => {
-  const mockDestroy = destroy as jest.MockedFunction<typeof destroy>;
-  const mockError = jest.spyOn(logger, 'error');
-
-  beforeEach(() => {
-    mockDestroy.mockClear();
-    mockError.mockClear();
-  });
-
-  test('should work correctly', async () => {
-    mockDestroy.mockResolvedValue([
-      [
-        { status: 'fulfilled', value: '' },
-        { status: 'rejected', reason: new Error('') }
-      ]
+  test('closes active connections and continues after a failed quit', async () => {
+    const failed = {
+      status: 'ready',
+      quit: jest.fn().mockRejectedValue(new Error('quit failed')),
+      removeListener: jest.fn()
+    };
+    const ready = { status: 'ready', quit: jest.fn().mockResolvedValue('OK'), removeListener: jest.fn() };
+    const ended = { status: 'end', quit: jest.fn(), removeListener: jest.fn() };
+    const clients = new Map([
+      ['failed', failed],
+      ['ready', ready],
+      ['ended', ended]
     ]);
-
     const module = new RedisModule({
-      get: (token: unknown) => {
-        if (token === REDIS_MERGED_OPTIONS) return { closeClient: true };
-        if (token === REDIS_CLIENTS) return new Map();
-      }
+      get: (token: unknown) => (token === REDIS_MERGED_OPTIONS ? { closeClient: true } : clients)
     } as ModuleRef);
     await module.onApplicationShutdown();
-    expect(mockDestroy).toHaveBeenCalledTimes(1);
-    expect(mockError).toHaveBeenCalledTimes(1);
+    expect(failed.quit).toHaveBeenCalledTimes(1);
+    expect(ready.quit).toHaveBeenCalledTimes(1);
+    expect(ended.quit).not.toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalledWith('failed: quit failed', expect.any(String));
+    expect(ready.removeListener).toHaveBeenCalledTimes(2);
+    expect(failed.removeListener).toHaveBeenCalledTimes(2);
   });
 });
